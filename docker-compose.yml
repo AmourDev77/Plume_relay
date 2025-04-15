@@ -1,0 +1,13 @@
+name: "Plume"
+services:
+    psq_database:
+        image: postgres
+        ports: 
+            - "5432:5432"
+        environment: 
+            - POSTGRES_PASSWORD=postgres
+        volumes: 
+            - postgresql_data:/var/lib/postgresql/data
+
+volumes:
+    postgresql_data: {}
