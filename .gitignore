@@ -1,6 +1,6 @@
 .env
 diesel.toml
-
+test
 
 # Added by cargo
 
