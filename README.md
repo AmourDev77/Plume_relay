@@ -9,6 +9,7 @@ Feel free to use, modify, and share it — as long as it's non-commercial and yo
 
 ### Requirements
 - Docker
+- mariadb client
 - Cargo
 - diesel_cli (installed via cargo : ``cargo install diesel_cli``)
 
