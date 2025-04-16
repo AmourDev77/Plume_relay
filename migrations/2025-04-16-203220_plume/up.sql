@@ -1,0 +1,6 @@
+-- Your SQL goes here
+CREATE TABLE User 
+(
+    id INT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    username VARCHAR(100) NOT NULL 
+)
