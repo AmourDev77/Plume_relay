@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 actix-web = "4.10.2"
+diesel = { version = "2.2.9", features = ["mysql"] }
