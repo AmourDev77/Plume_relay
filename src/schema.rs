@@ -2,9 +2,11 @@
 
 diesel::table! {
     Messages (id) {
+        #[max_length = 200]
+        author_key -> Nullable<Varchar>,
+        #[max_length = 200]
+        recipent_key -> Nullable<Varchar>,
         id -> Integer,
-        #[max_length = 100]
-        author -> Varchar,
         createdAt -> Timestamp,
         #[max_length = 10000]
         message_content -> Varchar,
@@ -12,8 +14,9 @@ diesel::table! {
 }
 
 diesel::table! {
-    User (id) {
-        id -> Integer,
+    User (rsa_key) {
+        #[max_length = 200]
+        rsa_key -> Varchar,
         #[max_length = 100]
         username -> Varchar,
         #[max_length = 200]
