@@ -1,18 +1,6 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    Autorization (id) {
-        id -> Integer,
-        user_id -> Integer,
-        #[max_length = 200]
-        token -> Varchar,
-        #[sql_name = "type"]
-        #[max_length = 50]
-        type_ -> Varchar,
-    }
-}
-
-diesel::table! {
     Messages (id) {
         id -> Integer,
         #[max_length = 100]
@@ -39,7 +27,6 @@ diesel::table! {
 }
 
 diesel::allow_tables_to_appear_in_same_query!(
-    Autorization,
     Messages,
     User,
 );
