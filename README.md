@@ -46,7 +46,7 @@ classDiagram
     } 
 ```
 
-ER Diagram :
+And here a basic schema of the er Diagram databases :
 ```mermaid
 erDiagram
     USER {
