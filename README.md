@@ -28,23 +28,46 @@ classDiagram
     direction TB
 
     class User {
-        id
+        rsa_key
         username
         password
         email
-        banner
-        token
         createdAt
-        blocked
+        banner
     }
 
-    class Autorization {
-        id
-        user_id
+    class Messages {
+        author_key
+        recipent_key
         token
-        url weebook
-        type
+        id
+        author_key
+        recipent_key
     } 
+```
+
+ER Diagram :
+```mermaid
+erDiagram
+    USER {
+        VARCHAR rsa_key PK "Primary Key"
+        VARCHAR username
+        VARCHAR password
+        VARCHAR email
+        TIMESTAMP createdAt
+        VARCHAR banner
+    }
+
+    MESSAGES {
+        INT id PK "Primary Key"
+        VARCHAR author_key FK "Foreign Key → User"
+        VARCHAR recipent_key FK "Foreign Key → User"
+        TIMESTAMP createdAt
+        VARCHAR message_content
+    }
+
+    USER ||--o{ MESSAGES : "author"
+    USER ||--o{ MESSAGES : "recipient"
 ```
 
 ## Running 
