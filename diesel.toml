@@ -6,4 +6,6 @@ file = "src/schema.rs"
 custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
 
 [migrations_directory]
-dir = "/home/tmcooper/code/plume_arch/plume_api/migrations"
+dir = "/home/tmcooper/code/plume_arch/plume_relay/migrations"
+
+# Modifier la variable dir pour la maintenir a jour dans les chemin
