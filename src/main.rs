@@ -14,8 +14,9 @@ use tokio_tungstenite::tungstenite::protocol::Message;
 
 type Tx = UnboundedSender<Message>;
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
+type KeysMap = Arc<Mutex<HashMap<SocketAddr, String>>>;
 
-async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: SocketAddr) {
+async fn handle_connection(mut peer_map: PeerMap, raw_stream: TcpStream, addr: SocketAddr, keys_map: KeysMap) {
     println!("Incoming TCP connection from: {}", addr);
 
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
@@ -29,29 +30,81 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
 
     let (outgoing, incoming) = ws_stream.split();
 
-    let broadcast_incoming = incoming.try_for_each(|msg| {
+    let handle_messages = incoming.try_for_each(|msg| {
         println!("Received a message from {}: {}", addr, msg.to_text().unwrap());
         let peers = peer_map.lock().unwrap();
 
-        // We want to broadcast the message to everyone except ourselves.
-        let broadcast_recipients =
-            peers.iter().filter(|(peer_addr, _)| peer_addr != &&addr).map(|(_, ws_sink)| ws_sink);
+        let split_msg: Vec<&str> = msg.to_text().expect("Unable to get string version of the message").split("--").collect();
 
-        for recp in broadcast_recipients {
-            let message = Message::text(format!("[{}] - {}",addr, msg.clone()));
-            recp.unbounded_send(message).unwrap();
+        // First we check the kind of message received
+        match split_msg[0] {
+            "login" => {
+                if split_msg.len() < 3 {
+                    let message = Message::text("Invalid login request format");
+                    // get the correct peers to send the message
+
+                    let recipent = peers.iter().find(|(peer_addr, _)| peer_addr == &&addr);
+
+                    match recipent {
+                        Some(recp) => {
+                            let (_, ws_sink) = recp;
+                            ws_sink.unbounded_send(message).unwrap()
+                        },
+                        _ => {
+                            println!("Unable to get the sender in the peers_map to send back error message");
+                        }
+                    }
+                }
+
+                // TODO: Verify the signature
+                
+                // If we get the key then register it in the array
+                println!("Key = {}", split_msg[1]);
+                keys_map.lock().unwrap().insert(addr, split_msg[1].to_string());
+
+                let message = Message::text(format!("Successfully logged in using the following key : {}", split_msg[1]));
+
+                if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
+                    let (_, websocker_peer) = peer;
+                    websocker_peer.unbounded_send(message).unwrap();
+                } else {
+                    println!("Unable to get the sender in the peers_map to send back connection message");
+                }
+            },
+            "message" => {
+                // We want to broadcast the message to everyone except ourselves.
+                let broadcast_recipients =
+                    peers.iter().filter(|(peer_addr, _)| peer_addr != &&addr).map(|(_, ws_sink)| ws_sink);
+
+                for recp in broadcast_recipients {
+                    let message = Message::text(format!("[{}] - {}",addr, msg.clone()));
+                    recp.unbounded_send(message).unwrap();
+                }
+            },
+            _ => {
+                let message = Message::text("Packet pattern not recognized");
+                if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
+                    let (_, websocker_peer) = peer;
+                    websocker_peer.unbounded_send(message).unwrap();
+                } else {
+                    println!("Unable to get the sender in the peers_map to send back error message");
+                }
+            }
         }
+
+
 
         future::ok(())
     });
 
     let receive_from_others = rx.map(Ok).forward(outgoing);
 
-    pin_mut!(broadcast_incoming, receive_from_others);
-    future::select(broadcast_incoming, receive_from_others).await;
+    pin_mut!(handle_messages, receive_from_others);
+    future::select(handle_messages, receive_from_others).await;
 
     println!("{} disconnected", &addr);
     peer_map.lock().unwrap().remove(&addr);
+    keys_map.lock().unwrap().remove(&addr); // also remove the key from connection list
 }
 
 #[tokio::main]
@@ -59,6 +112,7 @@ async fn main() -> Result<(), IoError> {
     let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8081".to_string());
 
     let state = PeerMap::new(Mutex::new(HashMap::new()));
+    let users_keys = KeysMap::new(Mutex::new(HashMap::new()));
 
     // Create the event loop and TCP listener we'll accept connections on.
     let try_socket = TcpListener::bind(&addr).await;
@@ -67,7 +121,7 @@ async fn main() -> Result<(), IoError> {
 
     // Let's spawn the handling of each connection in a separate task.
     while let Ok((stream, addr)) = listener.accept().await {
-        tokio::spawn(handle_connection(state.clone(), stream, addr));
+        tokio::spawn(handle_connection(state.clone(), stream, addr, users_keys.clone()));
     }
 
     Ok(())
