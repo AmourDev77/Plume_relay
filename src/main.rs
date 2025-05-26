@@ -7,16 +7,20 @@ use std::{
 };
 
 use futures_channel::mpsc::{unbounded, UnboundedSender};
-use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
+use futures_util::{future, lock::MutexGuard, pin_mut, stream::TryStreamExt, StreamExt};
 
+use security::verify_packet_signature;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
+
+mod security;
+
 
 type Tx = UnboundedSender<Message>;
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
 type KeysMap = Arc<Mutex<HashMap<SocketAddr, String>>>;
 
-async fn handle_connection(mut peer_map: PeerMap, raw_stream: TcpStream, addr: SocketAddr, keys_map: KeysMap) {
+async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: SocketAddr, keys_map: KeysMap) {
     println!("Incoming TCP connection from: {}", addr);
 
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
@@ -34,7 +38,7 @@ async fn handle_connection(mut peer_map: PeerMap, raw_stream: TcpStream, addr: S
         println!("Received a message from {}: {}", addr, msg.to_text().unwrap());
         let peers = peer_map.lock().unwrap();
 
-        let split_msg: Vec<&str> = msg.to_text().expect("Unable to get string version of the message").split("--").collect();
+        let split_msg: Vec<&str> = msg.to_text().expect("Unable to get string version of the message").split("__").collect();
 
         // First we check the kind of message received
         match split_msg[0] {
@@ -54,15 +58,26 @@ async fn handle_connection(mut peer_map: PeerMap, raw_stream: TcpStream, addr: S
                             println!("Unable to get the sender in the peers_map to send back error message");
                         }
                     }
+
+                    return future::ok(());
                 }
 
-                // TODO: Verify the signature
+                if !security::verify_packet_signature(msg.to_string()) {
+                    let message = Message::text("Invalid payload, signature did not match");
+                    if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
+                        let (_, websocker_peer) = peer;
+                        websocker_peer.unbounded_send(message).unwrap();
+                    } else {
+                        println!("Unable to get the sender in the peers_map to send back connection message");
+                    }
+                    return future::ok(());
+                }
                 
                 // If we get the key then register it in the array
                 println!("Key = {}", split_msg[1]);
                 keys_map.lock().unwrap().insert(addr, split_msg[1].to_string());
 
-                let message = Message::text(format!("Successfully logged in using the following key : {}", split_msg[1]));
+                let message = Message::text(format!("Successfully logged in using the following key :\n{}", split_msg[1]));
 
                 if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
                     let (_, websocker_peer) = peer;
@@ -72,12 +87,23 @@ async fn handle_connection(mut peer_map: PeerMap, raw_stream: TcpStream, addr: S
                 }
             },
             "message" => {
+                if !security::verify_packet_signature(msg.to_string()) {
+                    let message = Message::text("Invalid payload, signature did not match");
+                    if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
+                        let (_, websocker_peer) = peer;
+                        websocker_peer.unbounded_send(message).unwrap();
+                    } else {
+                        println!("Unable to get the sender in the peers_map to send back connection message");
+                    }
+                    return future::ok(());
+                }
+
                 // We want to broadcast the message to everyone except ourselves.
                 let broadcast_recipients =
                     peers.iter().filter(|(peer_addr, _)| peer_addr != &&addr).map(|(_, ws_sink)| ws_sink);
 
                 for recp in broadcast_recipients {
-                    let message = Message::text(format!("[{}] - {}",addr, msg.clone()));
+                    let message = Message::text(format!("[{}] - {}",addr, msg.to_string().split("__").collect::<Vec<&str>>()[3])); // Sending the message to everyone
                     recp.unbounded_send(message).unwrap();
                 }
             },
