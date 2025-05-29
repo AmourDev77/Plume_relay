@@ -7,9 +7,8 @@ use std::{
 };
 
 use futures_channel::mpsc::{unbounded, UnboundedSender};
-use futures_util::{future, lock::MutexGuard, pin_mut, stream::TryStreamExt, StreamExt};
+use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
-use security::verify_packet_signature;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
@@ -63,6 +62,7 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
                 }
 
                 if !security::verify_packet_signature(msg.to_string()) {
+                    // TODO: Upgrade security here (temp ban / warn)
                     let message = Message::text("Invalid payload, signature did not match");
                     if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
                         let (_, websocker_peer) = peer;
@@ -74,7 +74,6 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
                 }
                 
                 // If we get the key then register it in the array
-                println!("Key = {}", split_msg[1]);
                 keys_map.lock().unwrap().insert(addr, split_msg[1].to_string());
 
                 let message = Message::text(format!("Successfully logged in using the following key :\n{}", split_msg[1]));
@@ -105,6 +104,15 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
                 for recp in broadcast_recipients {
                     let message = Message::text(format!("[{}] - {}",addr, msg.to_string().split("__").collect::<Vec<&str>>()[3])); // Sending the message to everyone
                     recp.unbounded_send(message).unwrap();
+                }
+            },
+            "friend_request" => {
+                let message = Message::text("Request friend received");
+                if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
+                    let (_, websocker_peer) = peer;
+                    websocker_peer.unbounded_send(message).unwrap();
+                } else {
+                    println!("Unable to get the sender in the peers_map to send back connection message");
                 }
             },
             _ => {
