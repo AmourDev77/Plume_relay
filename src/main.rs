@@ -13,7 +13,9 @@ use tokio::net::{TcpListener, TcpStream};
 use tokio_tungstenite::tungstenite::protocol::Message;
 
 mod security;
+mod database;
 
+use database::{commande};
 
 type Tx = UnboundedSender<Message>;
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
@@ -141,8 +143,12 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
     keys_map.lock().unwrap().remove(&addr); // also remove the key from connection list
 }
 
+
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
+
+    database::commande::show_user_tables().await;
+
     let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8081".to_string());
 
     let state = PeerMap::new(Mutex::new(HashMap::new()));
@@ -157,6 +163,6 @@ async fn main() -> Result<(), IoError> {
     while let Ok((stream, addr)) = listener.accept().await {
         tokio::spawn(handle_connection(state.clone(), stream, addr, users_keys.clone()));
     }
-
+    
     Ok(())
 }
