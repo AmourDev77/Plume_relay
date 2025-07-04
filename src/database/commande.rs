@@ -35,6 +35,7 @@ pub async fn show_user_tables(){
         .expect("Erreur lors de la requête");
 
     for user in users {
-        println!("{:#?}", user); // affichage clair et complet
+        // println!("{:#?}", user); // affichage clair et complet
     }
+    println!("Affichage user en com pour evité saturation visuel au debug")
 }

@@ -9,24 +9,6 @@ pub async fn init(){
         Err(_) => {
             println!("Connection echouer tentative demarage database...");
             launch_database().await;
-
-            match connection::connection_database().await{
-                Ok(_) => println!("Connection database plume : OK !"),
-                
-                Err(_) => match creation_database().await{
-                    Ok(_) => {
-                        println!("état database plume : OK !");
-                        match connection::connection_database().await{
-                            Ok(_) => println!("Connection database plume : OK !"),
-                            Err(_) => println!("Creation de la base de donnée impossible..."),
-                        }
-                    }
-                    Err(_) => {
-                        panic!("Creation de la base de donnée impossible...");
-                        // TODO: Faire le module de la creation de la base de donnée avec docker
-                    }
-                }
-            }
         }
     }    
 }
@@ -48,7 +30,17 @@ pub async fn launch_database() -> std::result::Result<Output, Box<dyn std::error
     Ok(output)
 }
 
-pub async fn creation_database(){
-    // TODO: Faire les base de la base de donnée mdp user root etc avant la creation de la bdd
-    // plume
+pub async fn creation_database() -> std::result::Result<(), Box<dyn std::error::Error>> {
+    match connection::connection_database().await {
+        Ok(_) => {
+            println!("Connection Database : OK\nCréation des tables...");
+            Ok(())
+        }
+        Err(_) => {
+            println!("Connection impossible...");
+            Err("Erreur de connexion".into())
+        }
+    }
 }
+        // TODO: Faire les base de la base de donnée mdp user root etc avant la creation de la bdd
+        // plume

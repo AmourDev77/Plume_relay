@@ -1,5 +1,5 @@
 /*M!999999\- enable the sandbox mode */ 
--- MariaDB dump 10.19  Distrib 10.11.11-MariaDB, for debian-linux-gnu (x86_64)
+-- MariaDB dump 10.19  Distrib 10.11.13-MariaDB, for debian-linux-gnu (x86_64)
 --
 -- Host: 127.0.0.1    Database: plume
 -- ------------------------------------------------------
@@ -76,31 +76,6 @@ INSERT INTO `User` VALUES
 ('rsa_key_003','charlie','hashed_pw_3','charlie@example.com','2025-06-08 19:48:20','https://example.com/banner3.jpg');
 /*!40000 ALTER TABLE `User` ENABLE KEYS */;
 UNLOCK TABLES;
-
---
--- Table structure for table `__diesel_schema_migrations`
---
-
-DROP TABLE IF EXISTS `__diesel_schema_migrations`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8mb4 */;
-CREATE TABLE `__diesel_schema_migrations` (
-  `version` varchar(50) NOT NULL,
-  `run_on` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`version`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `__diesel_schema_migrations`
---
-
-LOCK TABLES `__diesel_schema_migrations` WRITE;
-/*!40000 ALTER TABLE `__diesel_schema_migrations` DISABLE KEYS */;
-INSERT INTO `__diesel_schema_migrations` VALUES
-('20250416203220','2025-04-17 16:52:24');
-/*!40000 ALTER TABLE `__diesel_schema_migrations` ENABLE KEYS */;
-UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -111,4 +86,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-06-09  0:22:34
+-- Dump completed on 2025-07-02  1:37:08
