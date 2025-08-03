@@ -1,7 +1,14 @@
 use std::process::{Command, Output};
+
+use mysql::PooledConn;
 pub mod connection;
 pub mod commande; 
 
+pub struct Database {
+    pub plume : PooledConn,
+}
+
+// let mut plume = connection::connection_database().await.expect("Erreur connection");
 
 pub async fn init(){
     match connection::connection_database().await {

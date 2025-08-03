@@ -10,12 +10,12 @@ use futures_channel::mpsc::{unbounded, UnboundedSender};
 use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 
 use tokio::net::{TcpListener, TcpStream};
-use tokio_tungstenite::tungstenite::protocol::Message;
+use tokio_tungstenite::tungstenite::protocol::{frame::coding::Data, Message};
 
 mod security;
 mod database;
 
-use database::{commande};
+use database::commande::Commandes;
 
 type Tx = UnboundedSender<Message>;
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
@@ -146,8 +146,9 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
-
-    database::commande::show_user_tables().await;
+    let mut db_client: database::Database = database::Database { plume: database::connection::connection_database().await.expect("Erreur lors de la connection") };
+    db_client.show_user_tables().await;
+    //Panic si la db n'est pas lancé
 
     let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8081".to_string());
 

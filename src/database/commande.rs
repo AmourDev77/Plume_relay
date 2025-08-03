@@ -1,5 +1,5 @@
 use mysql::prelude::*;
-use crate::database::connection;
+// use crate::database::connection;
 use chrono::NaiveDateTime;
 
 #[derive(Debug)]
@@ -12,30 +12,29 @@ pub struct User {
     pub banner: String,
 }
 
-pub async fn show_user_tables(){
-    let mut plume = connection::connection_database().await.expect("Erreur connection");
-    
-    // let rows: Vec<Row> = plume.query("SELECT * FROM User").expect("Erreur tables");
-
-    // for row in rows {
-    //     println!("{:?}", row);
-    // }
-
-    let users: Vec<User> = plume.query_map(
-            "SELECT rsa_key, username, password, email, createdAt, banner FROM User",
-            |(rsa_key, username, password, email, created_at, banner)| User{ 
-                rsa_key,
-                username,
-                password,
-                email,
-                created_at,
-                banner,
-            },
-        )
-        .expect("Erreur lors de la requête");
-
-    for user in users {
-        // println!("{:#?}", user); // affichage clair et complet
-    }
-    println!("Affichage user en com pour evité saturation visuel au debug")
+pub trait Commandes{
+    async fn show_user_tables(&mut self);
 }
+impl Commandes for super::Database {
+    async fn show_user_tables(&mut self){
+        let plume = &mut self.plume;
+        let users: Vec<User> = plume.query_map(
+                "SELECT rsa_key, username, password, email, createdAt, banner FROM User",
+                |(rsa_key, username, password, email, created_at, banner)| User{ 
+                    rsa_key,
+                    username,
+                    password,
+                    email,
+                    created_at,
+                    banner,
+                },
+            )
+            .expect("Erreur lors de la requête");
+
+        for user in users {
+            // println!("{:#?}", user); // affichage clair et complet
+        }
+        println!("Affichage user en com pour evité saturation visuel au debug")
+    }
+}
+
