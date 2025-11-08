@@ -78,7 +78,7 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
                 // If we get the key then register it in the array
                 keys_map.lock().unwrap().insert(addr, split_msg[1].to_string());
 
-                let message = Message::text(format!("Successfully logged in using the following key :\n{}", split_msg[1]));
+                let message = Message::text(format!("announcement__Successfully logged in using the following key :\n{}", split_msg[1]));
 
                 if let Some(peer) = peers.iter().find(|(ip_addr, _)| ip_addr == &&addr) {
                     let (_, websocker_peer) = peer;
@@ -147,7 +147,7 @@ async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: Socke
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
 
-    database::commande::show_user_tables().await;
+    // database::commande::show_user_tables().await;
 
     let addr = env::args().nth(1).unwrap_or_else(|| "127.0.0.1:8081".to_string());
 

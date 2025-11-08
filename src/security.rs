@@ -1,6 +1,7 @@
-use std::{str::FromStr, usize};
+// use std::{str::FromStr};
 
-use ed25519_dalek::{ed25519::signature, pkcs8::DecodePublicKey, Signature, VerifyingKey};
+use std::str::FromStr;
+use ed25519_dalek::{pkcs8::DecodePublicKey, Signature, VerifyingKey};
 
 /// Verify the signature of a given packet.
 /// Remember, a packet will always follow same structure : 
@@ -29,7 +30,7 @@ pub fn verify_packet_signature(packet: String) -> bool {
             let content = split_informations.join("__");
             println!("Veriying string : {}", content);
 
-            match key.verify_strict(&content.as_bytes(), &signature) {
+            match key.verify_strict(content.as_bytes(), &signature) {
                 Ok(_) => {
                     return true;
                 },
@@ -44,5 +45,27 @@ pub fn verify_packet_signature(packet: String) -> bool {
     } 
 
     println!("Invalid key : {}", &split_informations[1]);
-    return false
+    false
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::security;
+    #[test]
+    fn verify_empty_signature() {
+        assert!(!security::verify_packet_signature("".into()));
+    }
+
+    #[test]
+    fn verify_invalid_signature() {
+        assert!(!security::verify_packet_signature("message_invliadkey_invlaidsignatureprovided".into()))
+    }
+
+    #[test]
+    fn verify_valid_signature() {
+        assert!(security::verify_packet_signature("message__-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEA2oJO54T5oBYTdCVxw6YVafXLkrfg8q0CLp2+28vIaXQ=
+-----END PUBLIC KEY-----
+__future_target__test__1934BDD900F648E8366CA1C9E8E60B9C8E3C2E9CB3561E547DFC73BEF6FBF6DC7CFD061C7AB2B742C51D66475F7BFE30B22E35AA75FC693F9AB86981EC373F04".into()))
+    }
 }
